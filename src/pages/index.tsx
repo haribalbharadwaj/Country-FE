@@ -15,13 +15,12 @@ export default function Home() {
     if (region !== '') {
       try {
         const response = await axios.get(`http://localhost:3001/countries/region/${region}`);
-        console.log('Countries for region:', response.data); 
         setCountries(response.data);
       } catch (err) {
         setError(`Failed to load countries for region: ${region}`);
       }
     } else {
-      // Reset to all countries if no region selected
+      // Fetch all countries if 'All Regions' is selected
       fetchCountries();
     }
   };
@@ -30,7 +29,7 @@ export default function Home() {
     try {
       const response = await axios.get('http://localhost:3001/countries');
       setCountries(response.data);
-      console.log(response.data);
+      console.log('Fetched all countries', response.data);
       setLoading(false);
     } catch (err) {
       setError('Failed to load countries');
@@ -45,19 +44,13 @@ export default function Home() {
   if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
   if (error) return <p className="text-red-500">{error}</p>;
 
- /*const filteredCountries = countries.filter((country: any) => {
-  return (
-    typeof country.name === 'string' &&
-    country.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-});*/
-
-const filteredCountries = countries.filter((country) => {
-  const countryName = country?.name?.common || '';
-  return countryName.toLowerCase().includes(searchTerm.toLowerCase());
-});
-
-  
+  // Filter countries based on selected region and search term
+  const filteredCountries = countries.filter((country) => {
+    const countryName = country?.name?.common || country?.name;
+    const matchesSearch = countryName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRegion = selectedRegion ? country.region === selectedRegion : true;
+    return matchesSearch && matchesRegion;
+  });
 
   return (
     <div className="p-6">
@@ -80,43 +73,48 @@ const filteredCountries = countries.filter((country) => {
 
       {/* Search Input */}
       <div className="mb-4">
-        <label className="block text-gray-700">
-          Search for a Country
-        </label>
+        <label className="block text-gray-700">Search for a Country</label>
         <input
           id="search"
           type="text"
           placeholder="Enter country name"
-          className="border border-gray-300"
+          className="border border-gray-300 p-2"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
-      {/* Display filtered countries */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {filteredCountries.length > 0 ? (
-          filteredCountries.map((country) => (
-            <div key={country.name?.common} className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300">
-             {country.flags?.svg ?(
-                <img
-                  className="w-10 h-10 object-cover"
-                  src={country.flags.svg}
-                  alt={`Flag of ${country.name?.common}`}
-                />
-              ) : (
-                <p className="text-center">No Flag Available</p>
-              )}
-
-              <div className="mt-2 text-center">
-                <h2>{country.name?.common}</h2>
-                <p>{country.region}</p>
+      {/* Display Filtered Countries */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">
+          {selectedRegion ? `Countries in ${selectedRegion}` : 'All Countries'}
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {filteredCountries.length > 0 ? (
+            filteredCountries.map((country, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300"
+              >
+                {country.flag ? (
+                  <img
+                    className="w-10 h-10 object-cover"
+                    src={country.flag}
+                    alt={`Flag of ${country.name?.common}`}
+                  />
+                ) : (
+                  <p className="text-center">No Flag Available</p>
+                )}
+                <div className="mt-2 text-center">
+                  <h2>{typeof country.name === 'object' ? country.name?.common : country.name}</h2>
+                  <p>{country.region}</p>
+                </div>
               </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-gray-500">No countries found.</p>
-        )}
+            ))
+          ) : (
+            <p className="text-gray-500">No countries found.</p>
+          )}
+        </div>
       </div>
     </div>
   );
